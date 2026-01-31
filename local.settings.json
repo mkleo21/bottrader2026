@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "SQL_CONNECTION_STRING": "Server=localhost\\SQLEXPRESS;Database=tradecryptoDB;Trusted_Connection=yes;",
+    "COIN_API_URL": "https://fapi.binance.com/fapi/v1/exchangeInfo"
+  }
+}
