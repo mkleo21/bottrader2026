@@ -8,7 +8,7 @@ on:
 
 env:
   # The path where your project files (host.json, etc.) actually live
-  PROJECT_ROOT_PATH: './bot-trader' 
+  PROJECT_ROOT_PATH: '.' 
   PYTHON_VERSION: '3.12'
 
 jobs:
