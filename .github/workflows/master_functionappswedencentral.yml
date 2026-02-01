@@ -51,15 +51,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_5868ABE21E7A439E96E63E1132A58677 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0559D66EFC274BD5B25264A0BF298344 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_6E6AECCA13C840618BDD54F4607AD1C8 }}
-
-        
+       
       - name: 'Deploy to Azure Functions'
         uses: Azure/functions-action@v1
         id: deploy-to-function
@@ -67,5 +59,3 @@ jobs:
           app-name: 'FunctionAppSwedenCentral'
           package: 'release.zip' 
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_EC999B4B216A4636A35A2202D1467814 }}
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
