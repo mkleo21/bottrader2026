@@ -2,17 +2,31 @@ import logging
 import os
 import json
 import requests
-import pyodbc
+import pymssql
 import azure.functions as func
 
 bp = func.Blueprint()
 
 
-def get_conn_str():
-    conn = os.getenv("SQL_CONNECTION_STRING", "Server=localhost\\SQLEXPRESS;Database=tradecryptoDB;Trusted_Connection=yes;")
-    if "DRIVER=" not in conn.upper():
-        conn = "DRIVER={ODBC Driver 17 for SQL Server};" + conn
-    return conn
+def connect_db():
+    conn_str = os.getenv("SQL_CONNECTION_STRING")
+    # If using pymssql, it's better to parse or provide parts. 
+    # But pymssql can often take a server string if formatted correctly.
+    # For simplicity, we'll assume a standard format or fall back to local for testing.
+    # Note: Trusted_Connection=yes won't work on Linux/Azure.
+    if not conn_str:
+        return pymssql.connect(server='localhost', database='tradecryptoDB')
+    
+    # Simple parse for typical Azure SQL strings: 
+    # e.g. "Server=tcp:myserver.database.windows.net,1433;Database=mydb;User ID=myuser;Password=mypass;"
+    parts = {k.strip().upper(): v.strip() for k, v in (p.split('=') for p in conn_str.split(';') if '=' in p)}
+    
+    server = parts.get('SERVER', '').replace('tcp:', '').split(',')[0]
+    database = parts.get('DATABASE', '')
+    user = parts.get('USER ID', '')
+    password = parts.get('PASSWORD', '')
+
+    return pymssql.connect(server=server, user=user, password=password, database=database)
 
 
 def fetch_json():
@@ -34,7 +48,7 @@ def process():
     #add a check for symbols being null or empty string
     if not symbols:
         return {"processed": 0}
-    conn = pyodbc.connect(get_conn_str())
+    conn = connect_db()
     cursor = conn.cursor()
 
     processed = 0
@@ -59,12 +73,15 @@ def process():
         else:
             isActive = 1
         cursor.execute("""
-MERGE CoinInfoTable AS target
-USING (SELECT ? AS CoinSymbol,  ? AS PricePrecision, ? AS QuantityPrecision, ? AS IsActive) AS source
-ON (target.CoinSymbol = source.CoinSymbol)
-WHEN MATCHED THEN UPDATE SET PricePrecision = source.PricePrecision, QuantityPrecision = source.QuantityPrecision, IsActive = source.IsActive
-WHEN NOT MATCHED THEN INSERT (CoinSymbol, PricePrecision, QuantityPrecision, IsActive) VALUES (source.CoinSymbol, source.PricePrecision, source.QuantityPrecision, source.IsActive );
-""", sym, pricePrec, qtyPrec, isActive)
+IF EXISTS (SELECT 1 FROM CoinInfoTable WHERE CoinSymbol = %s)
+BEGIN
+    UPDATE CoinInfoTable SET PricePrecision = %s, QuantityPrecision = %s, IsActive = %s WHERE CoinSymbol = %s
+END
+ELSE
+BEGIN
+    INSERT INTO CoinInfoTable (CoinSymbol, PricePrecision, QuantityPrecision, IsActive) VALUES (%s, %s, %s, %s)
+END
+""", (sym, pricePrec, qtyPrec, isActive, sym, sym, pricePrec, qtyPrec, isActive))
         processed += 1
 
     conn.commit()
@@ -74,7 +91,7 @@ WHEN NOT MATCHED THEN INSERT (CoinSymbol, PricePrecision, QuantityPrecision, IsA
 
 
 @bp.route(route="FetchCoinInfoHttp", methods=["GET", "POST"])
-def main_http(req: func.HttpRequest) -> func.HttpResponse:
+def FetchCoinInfoHttp(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("FetchCoinInfo HTTP trigger started.")
     try:
         res = process()
