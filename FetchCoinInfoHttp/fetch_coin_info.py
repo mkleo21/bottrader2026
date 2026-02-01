@@ -6,25 +6,28 @@ bp = func.Blueprint()
 
 
 def connect_db():
-    import pymssql
+    import pyodbc
     conn_str = os.getenv("SQL_CONNECTION_STRING")
-    # If using pymssql, it's better to parse or provide parts. 
-    # But pymssql can often take a server string if formatted correctly.
-    # For simplicity, we'll assume a standard format or fall back to local for testing.
-    # Note: Trusted_Connection=yes won't work on Linux/Azure.
     if not conn_str:
-        return pymssql.connect(server='localhost', database='tradecryptoDB')
+        # Local development fallback (Windows)
+        return pyodbc.connect("Driver={ODBC Driver 17 for SQL Server};Server=localhost\\SQLEXPRESS;Database=tradecryptoDB;Trusted_Connection=yes;")
     
-    # Simple parse for typical Azure SQL strings: 
-    # e.g. "Server=tcp:myserver.database.windows.net,1433;Database=mydb;User ID=myuser;Password=mypass;"
-    parts = {k.strip().upper(): v.strip() for k, v in (p.split('=') for p in conn_str.split(';') if '=' in p)}
-    
-    server = parts.get('SERVER', '').replace('tcp:', '').split(',')[0]
-    database = parts.get('DATABASE', '')
-    user = parts.get('USER ID', '')
-    password = parts.get('PASSWORD', '')
+    # Azure Functions Linux environment comes with ODBC Driver 17 and 18.
+    # We use Authentication=ActiveDirectoryMSI for Managed Identity.
+    if "Authentication=ActiveDirectoryMSI" not in conn_str:
+         # Ensure driver is specified for Linux
+         if "DRIVER=" not in conn_str.upper():
+             # Driver 18 is preferred on newer Azure environments
+             conn_str = "Driver={ODBC Driver 18 for SQL Server};" + conn_str
+         
+         if "Authentication=" not in conn_str:
+             conn_str += "Authentication=ActiveDirectoryMSI;"
+             
+         # Driver 18 requires TrustServerCertificate=yes if not using a custom cert
+         if "TrustServerCertificate=" not in conn_str:
+             conn_str += "TrustServerCertificate=yes;"
 
-    return pymssql.connect(server=server, user=user, password=password, database=database)
+    return pyodbc.connect(conn_str)
 
 
 def fetch_json():
@@ -72,15 +75,12 @@ def process():
         else:
             isActive = 1
         cursor.execute("""
-IF EXISTS (SELECT 1 FROM CoinInfoTable WHERE CoinSymbol = %s)
-BEGIN
-    UPDATE CoinInfoTable SET PricePrecision = %s, QuantityPrecision = %s, IsActive = %s WHERE CoinSymbol = %s
-END
-ELSE
-BEGIN
-    INSERT INTO CoinInfoTable (CoinSymbol, PricePrecision, QuantityPrecision, IsActive) VALUES (%s, %s, %s, %s)
-END
-""", (sym, pricePrec, qtyPrec, isActive, sym, sym, pricePrec, qtyPrec, isActive))
+MERGE CoinInfoTable AS target
+USING (SELECT ? AS CoinSymbol,  ? AS PricePrecision, ? AS QuantityPrecision, ? AS IsActive) AS source
+ON (target.CoinSymbol = source.CoinSymbol)
+WHEN MATCHED THEN UPDATE SET PricePrecision = source.PricePrecision, QuantityPrecision = source.QuantityPrecision, IsActive = source.IsActive
+WHEN NOT MATCHED THEN INSERT (CoinSymbol, PricePrecision, QuantityPrecision, IsActive) VALUES (source.CoinSymbol, source.PricePrecision, source.QuantityPrecision, source.IsActive );
+""", sym, pricePrec, qtyPrec, isActive)
         processed += 1
 
     conn.commit()
