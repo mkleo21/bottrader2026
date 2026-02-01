@@ -5,6 +5,8 @@ import requests
 import pyodbc
 import azure.functions as func
 
+bp = func.Blueprint()
+
 
 def get_conn_str():
     conn = os.getenv("SQL_CONNECTION_STRING", "Server=localhost\\SQLEXPRESS;Database=tradecryptoDB;Trusted_Connection=yes;")
@@ -71,6 +73,7 @@ WHEN NOT MATCHED THEN INSERT (CoinSymbol, PricePrecision, QuantityPrecision, IsA
     return {"processed": processed}
 
 
+@bp.route(route="FetchCoinInfoHttp", methods=["GET", "POST"])
 def main_http(req: func.HttpRequest) -> func.HttpResponse:
     logging.info("FetchCoinInfo HTTP trigger started.")
     try:
