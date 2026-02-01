@@ -1,14 +1,12 @@
 import logging
 import os
-import json
-import requests
-import pymssql
 import azure.functions as func
 
 bp = func.Blueprint()
 
 
 def connect_db():
+    import pymssql
     conn_str = os.getenv("SQL_CONNECTION_STRING")
     # If using pymssql, it's better to parse or provide parts. 
     # But pymssql can often take a server string if formatted correctly.
@@ -30,6 +28,7 @@ def connect_db():
 
 
 def fetch_json():
+    import requests
     url = os.getenv("COIN_API_URL")
     if url:
         resp = requests.get(url, timeout=30)
@@ -92,6 +91,7 @@ END
 
 @bp.route(route="FetchCoinInfoHttp", methods=["GET", "POST"])
 def FetchCoinInfoHttp(req: func.HttpRequest) -> func.HttpResponse:
+    import json
     logging.info("FetchCoinInfo HTTP trigger started.")
     try:
         res = process()
