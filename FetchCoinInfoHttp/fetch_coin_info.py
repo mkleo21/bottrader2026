@@ -8,25 +8,6 @@ bp = func.Blueprint()
 def connect_db():
     import pyodbc
     conn_str = os.getenv("SQL_CONNECTION_STRING")
-    if not conn_str:
-        # Local development fallback (Windows)
-        return pyodbc.connect("Driver={ODBC Driver 17 for SQL Server};Server=localhost\\SQLEXPRESS;Database=tradecryptoDB;Trusted_Connection=yes;")
-    
-    # Azure Functions Linux environment comes with ODBC Driver 17 and 18.
-    # We use Authentication=ActiveDirectoryMSI for Managed Identity.
-    if "Authentication=ActiveDirectoryMSI" not in conn_str:
-         # Ensure driver is specified for Linux
-         if "DRIVER=" not in conn_str.upper():
-             # Driver 18 is preferred on newer Azure environments
-             conn_str = "Driver={ODBC Driver 18 for SQL Server};" + conn_str
-         
-         if "Authentication=" not in conn_str:
-             conn_str += "Authentication=ActiveDirectoryMSI;"
-             
-         # Driver 18 requires TrustServerCertificate=yes if not using a custom cert
-         if "TrustServerCertificate=" not in conn_str:
-             conn_str += "TrustServerCertificate=yes;"
-
     return pyodbc.connect(conn_str)
 
 
@@ -58,6 +39,11 @@ def process():
     for s in symbols:
         status = s.get("status") or s.get("Status")
         sym = s.get("symbol") or s.get("Symbol") or s.get("CoinSymbol")
+        
+        # Only process symbols ending with USDT
+        if not sym or not sym.endswith("USDT"):
+            continue
+
         pricePrec = s.get("pricePrecision") or s.get("price_precision") or 0
         qtyPrec = s.get("quantityPrecision") or s.get("quantity_precision") or 0
         try:
