@@ -2,4 +2,8 @@ requests>=2.28
 pyodbc
 azure-identity
 azure-functions>=1.11.0
-# Optional: pin versions used in CI/deploy
+azure-functions-durable
+pandas
+pandas_ta
+python-binance
+azure-communication-email

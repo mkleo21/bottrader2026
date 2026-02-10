@@ -5,8 +5,27 @@
     "FUNCTIONS_WORKER_RUNTIME": "python",
     "PYTHON_PATH": "C:\\Users\\matee\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
     "SQL_CONNECTION_STRING": "Driver={ODBC Driver 17 for SQL Server};Server=localhost\\SQLEXPRESS;Database=tradecryptoDB;Trusted_Connection=yes;",
-    "COIN_API_URL": "https://fapi.binance.com/fapi/v1/exchangeInfo"
+    "COIN_API_URL": "https://fapi.binance.com/fapi/v1/exchangeInfo",
+    "CheckDBTablesExists": "true",
+    "BINANCE_API_KEY": "YOUR_BINANCE_API_KEY",
+    "BINANCE_API_SECRET": "YOUR_BINANCE_API_SECRET",
+    "BINANCE_USE_TESTNET": "false",
+    "Email_NewCoinsAdded": "true",
+    "Email_HistoricalDataSummary": "true",
+    "Email_HistoricalDataNoNew": "true",
+    "Email_BinanceDataTimeout": "true",
+    "Email_NoActiveCoins": "true",
+    "Email_TradeEntry": "true",
+    "Email_TradeCancelled": "true",
+    "Email_TradeClosed": "true",
+    "Email_CleanupDone": "true",
+    "Email_SystemError": "true",
+    "EMAIL_CONNECTION_STRING": "PASTE_YOUR_CONNECTION_STRING_HERE",
+    "EMAIL_SENDER": "DoNotReply@your-domain.azurecomm.net",
+    "EMAIL_RECIPIENT": "mateenkapadia.sweden@gmail.com"
     //tradeadmin/CryptoTrader@2026#2026!
     //server tradecryptodb2026
+    //server - cryptoserver2026 - serveradmin CryptoTrader@2026#2026!
+    //db - cryptodb2026
   }
 }

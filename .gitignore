@@ -107,6 +107,20 @@ venv.bak/
 
 # Microsoft Azure settings
 local.settings.json
+.python_packages/
+.funcignore
+
+# Azurite local storage
+__blobstorage__/
+__queuestorage__/
+__azurite_db_*.json
+AzuriteConfig
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Overlays
 .overlays/
